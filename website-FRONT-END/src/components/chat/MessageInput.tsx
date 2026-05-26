@@ -177,6 +177,8 @@ const MessageInput = ({ selectedConvo }: { selectedConvo: Conversation }) => {
         throw new Error(data.message || "Lưu thông tin ngân hàng thất bại");
       }
 
+      await useAuthStore.getState().fetchMe();
+
       toast.success("Lưu tài khoản thành công! Giờ có thể tạo QR.");
       setQrTab("create");
     } catch (error) {
