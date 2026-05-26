@@ -1,0 +1,12 @@
+Lấy ý tưởng từ Moji - Chat RealTime
+Auth:
+- Đăng ký, đăng nhập, đăng xuất
+- Đăng ký : 
++ họ, tên -> display name
++ username, password -> login
++ email -> để gửi email
++ sdt
++ birthday
+- Đăng nhập:
++ mã hóa password
++ access + refresh token -> giữ trạng thái đăng nhập

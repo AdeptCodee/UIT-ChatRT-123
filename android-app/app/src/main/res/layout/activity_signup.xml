@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo (Bạn có thể thay bằng ImageView thực tế) -->
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginTop="20dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tạo tài khoản ChatRT"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nhập thông tin của bạn để tạo tài khoản"
+            android:textColor="@color/text_gray"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Họ và Tên (Nằm ngang) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Họ" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/etLastName" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Ví dụ: Trương" android:background="@drawable/edit_text_bg" android:inputType="textPersonName" android:textSize="14sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tên" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/etFirstName" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Ví dụ: Nguyên" android:background="@drawable/edit_text_bg" android:inputType="textPersonName" android:textSize="14sp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Tên đăng nhập -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tên đăng nhập" android:textStyle="bold" android:layout_marginTop="16dp" android:layout_marginBottom="4dp"/>
+        <EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="username123" android:background="@drawable/edit_text_bg" android:inputType="text" android:textSize="14sp"/>
+
+        <!-- Email -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Email" android:textStyle="bold" android:layout_marginTop="16dp" android:layout_marginBottom="4dp"/>
+        <EditText android:id="@+id/etEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="nguyentruong@example.com" android:background="@drawable/edit_text_bg" android:inputType="textEmailAddress" android:textSize="14sp"/>
+
+        <!-- Mật khẩu -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mật khẩu" android:textStyle="bold" android:layout_marginTop="16dp" android:layout_marginBottom="4dp"/>
+        <EditText android:id="@+id/etPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="••••••••" android:background="@drawable/edit_text_bg" android:inputType="textPassword" android:textSize="14sp"/>
+
+        <!-- Nút Tạo tài khoản -->
+        <Button
+            android:id="@+id/btnSignUp"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Tạo tài khoản"
+            android:textAllCaps="false"
+            android:backgroundTint="@color/primary_purple"
+            android:layout_marginTop="30dp"
+            app:cornerRadius="12dp"/>
+
+        <TextView
+            android:id="@+id/tvGoToLogin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Đã có tài khoản? Đăng nhập"
+            android:layout_marginTop="20dp"
+            android:textColor="@color/primary_purple"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bằng cách tiếp tục, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi."
+            android:textSize="11sp"
+            android:gravity="center"
+            android:layout_marginTop="40dp"
+            android:textColor="@color/text_gray"/>
+
+    </LinearLayout>
+</ScrollView>

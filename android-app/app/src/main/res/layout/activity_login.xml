@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginTop="40dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Đăng nhập vào ChatRT"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nhập thông tin của bạn để đăng nhập"
+            android:textColor="#6B7280"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Tên đăng nhập -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tên đăng nhập"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <EditText
+            android:id="@+id/etUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="username123"
+            android:background="@drawable/edit_text_bg"
+            android:inputType="text"
+            android:textSize="14sp"
+            android:padding="12dp"/>
+
+        <!-- ĐÂY LÀ DÒNG BỊ THIẾU -->
+        <TextView
+            android:id="@+id/tvUsernameError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tên đăng nhập phải có ít nhất 3 ký tự"
+            android:textColor="#EF4444"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone"/>
+
+        <!-- Mật khẩu -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mật khẩu"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="4dp"/>
+
+        <EditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="••••••••"
+            android:background="@drawable/edit_text_bg"
+            android:inputType="textPassword"
+            android:textSize="14sp"
+            android:padding="12dp"/>
+
+        <!-- ĐÂY LÀ DÒNG BỊ THIẾU -->
+        <TextView
+            android:id="@+id/tvPasswordError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mật khẩu phải có ít nhất 6 ký tự"
+            android:textColor="#EF4444"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone"/>
+
+        <!-- Nút Đăng nhập -->
+        <Button
+            android:id="@+id/btnLogin"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Đăng nhập"
+            android:textAllCaps="false"
+            android:backgroundTint="#7C3AED"
+            android:layout_marginTop="32dp"
+            app:cornerRadius="12dp"/>
+
+        <TextView
+            android:id="@+id/tvGoToSignUp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chưa có tài khoản? Đăng ký"
+            android:layout_marginTop="24dp"
+            android:textColor="#7C3AED"
+            android:textStyle="bold"
+            android:padding="8dp"/>
+
+    </LinearLayout>
+</ScrollView>
