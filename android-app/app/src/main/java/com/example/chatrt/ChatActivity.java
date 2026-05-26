@@ -1,20 +1,20 @@
 package com.example.chatrt;
 
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -24,9 +24,6 @@ import com.example.chatrt.api.*;
 import com.example.chatrt.models.*;
 import com.example.chatrt.utils.ReminderParser;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +64,6 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        // Khôi phục lấy dữ liệu từ Intent
         conversationId = getIntent().getStringExtra("CONVERSATION_ID");
         chatName = getIntent().getStringExtra("CHAT_NAME");
         avatarUrl = getIntent().getStringExtra("AVATAR_URL");
@@ -92,16 +88,11 @@ public class ChatActivity extends AppCompatActivity {
         tvTitle.setText(chatName);
         updateHeaderAvatar(chatName, avatarUrl);
 
-        // KHÔI PHỤC NÚT BACK CHUẨN XỊN
         ImageView btnBack = findViewById(R.id.btnChatBack);
         if (btnBack != null) {
-            btnBack.setOnClickListener(v -> {
-                // Thoát màn hình chuẩn Android đời mới
-                getOnBackPressedDispatcher().onBackPressed();
-            });
+            btnBack.setOnClickListener(v -> finish());
         }
 
-        // KẾT NỐI NÚT BẤM QR CODE
         ImageView btnQrCode = findViewById(R.id.btnQrCode);
         if (btnQrCode != null) {
             btnQrCode.setOnClickListener(v -> showQrDialog());
@@ -194,22 +185,28 @@ public class ChatActivity extends AppCompatActivity {
         RequestBody rbContent = RequestBody.create(MediaType.parse("text/plain"), content);
 
         ApiService api = ApiClient.getClient(this).create(ApiService.class);
-        String recipientId = "";
-        for (Conversation.Participant p : currentParticipants) {
-            if (!p.getId().equals(myId)) { recipientId = p.getId(); break; }
-        }
 
-        RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
-        api.sendDirectMessage(rbRecipient, rbContent, rbConvoId, null).enqueue(new Callback<SendMessageResponse>() {
-            @Override
-            public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    addMessageToList(response.body().getMessage());
-                }
+        if ("direct".equals(conversationType)) {
+            String recipientId = "";
+            for (Conversation.Participant p : currentParticipants) {
+                if (!p.getId().equals(myId)) { recipientId = p.getId(); break; }
             }
-            @Override public void onFailure(Call<SendMessageResponse> call, Throwable t) {}
-        });
+            RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
+            api.sendDirectMessage(rbRecipient, rbContent, rbConvoId, null).enqueue(messageCallback);
+        } else {
+            api.sendGroupMessage(rbConvoId, rbContent, null).enqueue(messageCallback);
+        }
     }
+
+    private final Callback<SendMessageResponse> messageCallback = new Callback<SendMessageResponse>() {
+        @Override
+        public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
+            if (response.isSuccessful() && response.body() != null) {
+                addMessageToList(response.body().getMessage());
+            }
+        }
+        @Override public void onFailure(Call<SendMessageResponse> call, Throwable t) {}
+    };
 
     private void setupSocket() {
         socketManager.connect();
@@ -320,16 +317,39 @@ public class ChatActivity extends AppCompatActivity {
         android.widget.Button btnTabCreate = dialog.findViewById(R.id.btnTabCreate);
         android.widget.Button btnTabSetup = dialog.findViewById(R.id.btnTabSetup);
 
-        // -- KHỞI TẠO DANH SÁCH DROPDOWN CHỌN NGÂN HÀNG --
-        android.widget.Spinner spinnerBank = dialog.findViewById(R.id.spinnerBank);
+        Spinner spinnerBank = dialog.findViewById(R.id.spinnerBank);
         String[] bankNames = {"MBBank - Ngân hàng Quân Đội", "Vietcombank", "VietinBank", "BIDV", "TPBank"};
         String[] bankCodes = {"970422", "970436", "970415", "970418", "970423"};
-        android.widget.ArrayAdapter<String> bankAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, bankNames);
-        if (spinnerBank != null) {
-            spinnerBank.setAdapter(bankAdapter);
-        }
+        ArrayAdapter<String> bankAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, bankNames);
+        if (spinnerBank != null) spinnerBank.setAdapter(bankAdapter);
 
-        // Logic Chuyển Tab
+        EditText etBankAccNo = dialog.findViewById(R.id.etBankAccNo);
+        EditText etBankAccName = dialog.findViewById(R.id.etBankAccName);
+
+        // --- FETCH DỮ LIỆU CŨ ĐỂ HIỂN THỊ ---
+        ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
+        apiService.fetchMe().enqueue(new Callback<SearchResponse>() {
+            @Override
+            public void onResponse(Call<SearchResponse> call, Response<SearchResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body().getUser();
+                    if (user != null) {
+                        if (etBankAccNo != null) etBankAccNo.setText(user.getAccountNo());
+                        if (etBankAccName != null) etBankAccName.setText(user.getAccountName());
+                        if (spinnerBank != null && user.getAcqId() != null) {
+                            for (int i = 0; i < bankCodes.length; i++) {
+                                if (bankCodes[i].equals(user.getAcqId())) {
+                                    spinnerBank.setSelection(i);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            @Override public void onFailure(Call<SearchResponse> call, Throwable t) {}
+        });
+
         if (btnTabCreate != null) {
             btnTabCreate.setOnClickListener(v -> {
                 if (layoutCreateQr != null) layoutCreateQr.setVisibility(View.VISIBLE);
@@ -356,22 +376,13 @@ public class ChatActivity extends AppCompatActivity {
             });
         }
 
-        // Logic Xử lý Lưu Ngân Hàng
         android.widget.Button btnSaveBank = dialog.findViewById(R.id.btnSaveBank);
         if (btnSaveBank != null) {
             btnSaveBank.setOnClickListener(v -> {
-                EditText etBankAccNo = dialog.findViewById(R.id.etBankAccNo);
-                EditText etBankAccName = dialog.findViewById(R.id.etBankAccName);
                 if (etBankAccNo == null || etBankAccName == null) return;
-
                 String accNo = etBankAccNo.getText().toString().trim();
                 String accName = etBankAccName.getText().toString().trim();
-
-                int selectedPosition = 0;
-                if (spinnerBank != null) {
-                    selectedPosition = spinnerBank.getSelectedItemPosition();
-                }
-                String selectedBankCode = bankCodes[selectedPosition];
+                String selectedBankCode = bankCodes[spinnerBank.getSelectedItemPosition()];
 
                 if (accNo.isEmpty() || accName.isEmpty()) {
                     Toast.makeText(this, "Nhập đủ thông tin ngân hàng!", Toast.LENGTH_SHORT).show();
@@ -382,31 +393,46 @@ public class ChatActivity extends AppCompatActivity {
                 body.put("accountName", accName);
                 body.put("acqId", selectedBankCode);
 
-                ApiClient.getClient(this).create(ApiService.class).setupBank(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+                apiService.setupBank(body).enqueue(new Callback<com.google.gson.JsonObject>() {
                     @Override
                     public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
                         if (response.isSuccessful()) {
                             Toast.makeText(ChatActivity.this, "Lưu tài khoản thành công!", Toast.LENGTH_SHORT).show();
+
+                            // Refresh my profile immediately so UI reflects saved bank info
+                            apiService.fetchMe().enqueue(new Callback<SearchResponse>() {
+                                @Override public void onResponse(Call<SearchResponse> call, Response<SearchResponse> resp) {
+                                    if (resp.isSuccessful() && resp.body() != null) {
+                                        User updated = resp.body().getUser();
+                                        if (updated != null) {
+                                            if (etBankAccNo != null) etBankAccNo.setText(updated.getAccountNo());
+                                            if (etBankAccName != null) etBankAccName.setText(updated.getAccountName());
+                                            if (spinnerBank != null && updated.getAcqId() != null) {
+                                                for (int i = 0; i < bankCodes.length; i++) {
+                                                    if (bankCodes[i].equals(updated.getAcqId())) { spinnerBank.setSelection(i); break; }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                @Override public void onFailure(Call<SearchResponse> call, Throwable t) {}
+                            });
+
                             if (btnTabCreate != null) btnTabCreate.performClick();
                         } else {
-                            // MOI RUỘT GAN LỖI TỪ BACKEND RA ĐÂY NÀY
                             try {
-                                String errorDetails = response.errorBody() != null ? response.errorBody().string() : "Không có chi tiết";
-                                Toast.makeText(ChatActivity.this, "Lỗi " + response.code() + ": " + errorDetails, Toast.LENGTH_LONG).show();
-                                Log.e("API_ERROR", "Lỗi backend: " + errorDetails);
-                            } catch (Exception e) {
-                                Toast.makeText(ChatActivity.this, "Lỗi HTTP " + response.code(), Toast.LENGTH_SHORT).show();
-                            }
+                                String err = response.errorBody() != null ? response.errorBody().string() : "Lỗi không xác định";
+                                Toast.makeText(ChatActivity.this, "Lỗi " + response.code() + ": " + err, Toast.LENGTH_LONG).show();
+                            } catch (Exception e) { e.printStackTrace(); }
                         }
                     }
                     @Override public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
-                        Toast.makeText(ChatActivity.this, "Mất kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChatActivity.this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
                     }
                 });
             });
         }
 
-        // Logic Xử lý Tạo & Gửi Yêu Cầu QR
         android.widget.Button btnSendQr = dialog.findViewById(R.id.btnSendQr);
         if (btnSendQr != null) {
             btnSendQr.setOnClickListener(v -> {
@@ -421,7 +447,6 @@ public class ChatActivity extends AppCompatActivity {
                     return;
                 }
 
-                // THÊM HIỆU ỨNG LOADING ĐỂ CHẶN BẤM NHIỀU LẦN
                 btnSendQr.setText("Đang xử lý...");
                 btnSendQr.setEnabled(false);
 
@@ -429,16 +454,13 @@ public class ChatActivity extends AppCompatActivity {
                 body.put("amount", Integer.parseInt(amount));
                 body.put("addInfo", content.isEmpty() ? "Chuyen tien" : content);
 
-                ApiClient.getClient(this).create(ApiService.class).generateQr(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+                apiService.generateQr(body).enqueue(new Callback<com.google.gson.JsonObject>() {
                     @Override
                     public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             try {
                                 String base64String = response.body().get("qrDataURL").getAsString();
-                                // Xử lý cắt chuỗi an toàn hơn
-                                if (base64String.contains(",")) {
-                                    base64String = base64String.split(",")[1];
-                                }
+                                if (base64String.contains(",")) base64String = base64String.split(",")[1];
                                 byte[] decodedBytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT);
 
                                 java.io.File file = new java.io.File(getCacheDir(), "qr_payment.png");
@@ -448,80 +470,52 @@ public class ChatActivity extends AppCompatActivity {
 
                                 RequestBody reqFile = RequestBody.create(MediaType.parse("image/png"), file);
                                 MultipartBody.Part imagePart = MultipartBody.Part.createFormData("image", file.getName(), reqFile);
-
                                 RequestBody rbConvoId = RequestBody.create(MediaType.parse("text/plain"), conversationId);
-                                String captionText = "💸 Gửi yêu cầu chuyển tiền: " + amount + " VNĐ\nNội dung: " + (content.isEmpty() ? "Chuyen tien" : content);
+                                String captionText = "💸 Yêu cầu chuyển tiền: " + amount + " VNĐ\nNội dung: " + (content.isEmpty() ? "Chuyen tien" : content);
                                 RequestBody rbContent = RequestBody.create(MediaType.parse("text/plain"), captionText);
 
-                                String recipientId = "";
-                                for (Conversation.Participant p : currentParticipants) {
-                                    if (!p.getId().equals(myId)) { recipientId = p.getId(); break; }
-                                }
-
-                                if (recipientId.isEmpty()) {
-                                    btnSendQr.setText("Gửi mã QR");
-                                    btnSendQr.setEnabled(true);
-                                    Toast.makeText(ChatActivity.this, "Lỗi: Không tìm thấy người nhận!", Toast.LENGTH_SHORT).show();
-                                    return;
-                                }
-
-                                RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
-
-                                ApiClient.getClient(ChatActivity.this).create(ApiService.class).sendDirectMessage(rbRecipient, rbContent, rbConvoId, imagePart).enqueue(new Callback<SendMessageResponse>() {
-                                    @Override
-                                    public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
-                                        btnSendQr.setText("Gửi mã QR");
-                                        btnSendQr.setEnabled(true);
-
-                                        if (response.isSuccessful() && response.body() != null) {
-                                            addMessageToList(response.body().getMessage());
-                                            dialog.dismiss(); // Tắt popup khi thành công
-                                        } else {
-                                            try {
-                                                String err = response.errorBody() != null ? response.errorBody().string() : "";
-                                                Toast.makeText(ChatActivity.this, "Lỗi gửi ảnh: " + response.code() + " " + err, Toast.LENGTH_LONG).show();
-                                            } catch (Exception e) {
-                                                Toast.makeText(ChatActivity.this, "Lỗi gửi ảnh vào chat!", Toast.LENGTH_SHORT).show();
-                                            }
-                                        }
+                                if ("direct".equals(conversationType)) {
+                                    String recipientId = "";
+                                    for (Conversation.Participant p : currentParticipants) {
+                                        if (!p.getId().equals(myId)) { recipientId = p.getId(); break; }
                                     }
-                                    @Override public void onFailure(Call<SendMessageResponse> call, Throwable t) {
-                                        btnSendQr.setText("Gửi mã QR");
-                                        btnSendQr.setEnabled(true);
-                                        Toast.makeText(ChatActivity.this, "Mất kết nối mạng khi gửi!", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                btnSendQr.setText("Gửi mã QR");
-                                btnSendQr.setEnabled(true);
-                                Toast.makeText(ChatActivity.this, "Lỗi giải mã ảnh QR!", Toast.LENGTH_SHORT).show();
-                            }
+                                    RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
+                                    apiService.sendDirectMessage(rbRecipient, rbContent, rbConvoId, imagePart).enqueue(qrResultCallback);
+                                } else {
+                                    apiService.sendGroupMessage(rbConvoId, rbContent, imagePart).enqueue(qrResultCallback);
+                                }
+                                dialog.dismiss();
+                            } catch (Exception e) { e.printStackTrace(); }
                         } else {
                             btnSendQr.setText("Gửi mã QR");
                             btnSendQr.setEnabled(true);
                             if (response.code() == 400) {
-                                Toast.makeText(ChatActivity.this, "Chưa cài ngân hàng!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ChatActivity.this, "Vui lòng cài đặt ngân hàng trước!", Toast.LENGTH_SHORT).show();
                                 if (btnTabSetup != null) btnTabSetup.performClick();
                             } else {
                                 try {
-                                    String err = response.errorBody() != null ? response.errorBody().string() : "";
-                                    Toast.makeText(ChatActivity.this, "Lỗi API Backend: " + response.code() + " " + err, Toast.LENGTH_LONG).show();
-                                } catch (Exception e) {
-                                    Toast.makeText(ChatActivity.this, "Lỗi API Backend sinh QR!", Toast.LENGTH_SHORT).show();
-                                }
+                                    Toast.makeText(ChatActivity.this, "Lỗi: " + response.errorBody().string(), Toast.LENGTH_LONG).show();
+                                } catch (Exception e) { e.printStackTrace(); }
                             }
                         }
                     }
                     @Override public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
                         btnSendQr.setText("Gửi mã QR");
                         btnSendQr.setEnabled(true);
-                        Toast.makeText(ChatActivity.this, "Không thể kết nối đến Backend: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
             });
         }
-
         dialog.show();
     }
+
+    private final Callback<SendMessageResponse> qrResultCallback = new Callback<SendMessageResponse>() {
+        @Override
+        public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
+            if (response.isSuccessful() && response.body() != null) {
+                addMessageToList(response.body().getMessage());
+            }
+        }
+        @Override public void onFailure(Call<SendMessageResponse> call, Throwable t) {}
+    };
 }

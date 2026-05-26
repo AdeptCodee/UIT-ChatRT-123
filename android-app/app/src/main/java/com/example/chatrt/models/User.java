@@ -34,6 +34,16 @@ public class User {
     @SerializedName("createdAt")
     private String createdAt;
 
+    // --- Thông tin ngân hàng (do backend trả về) ---
+    @SerializedName("accountNo")
+    private String accountNo;
+
+    @SerializedName("accountName")
+    private String accountName;
+
+    @SerializedName("acqId")
+    private String acqId;
+
     // --- Các hàm Getter và Setter ---
     // (Dùng để lấy dữ liệu ra hoặc gán dữ liệu vào các biến ở trên)
 
@@ -60,4 +70,14 @@ public class User {
 
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+    // --- Getters/Setters for bank info ---
+    public String getAccountNo() { return accountNo; }
+    public void setAccountNo(String accountNo) { this.accountNo = accountNo; }
+
+    public String getAccountName() { return accountName; }
+    public void setAccountName(String accountName) { this.accountName = accountName; }
+
+    public String getAcqId() { return acqId; }
+    public void setAcqId(String acqId) { this.acqId = acqId; }
 }
