@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "https://uit-androidproject-backend.onrender.com/api",
-      "description": "Render Production Server"
+      "url": "https://uit-chatrt-123-backend.onrender.com/api",
+      "description": "Production Server"
     },
     {
       "url": "http://localhost:5001/api",
@@ -35,6 +35,14 @@
     {
       "name": "Messages",
       "description": "Protected APIs - Xử lý gửi tin nhắn 1-1 và tin nhắn nhóm"
+    },
+    {
+      "name": "Payments",
+      "description": "Protected APIs - Lưu tài khoản ngân hàng và tạo mã QR"
+    },
+    {
+      "name": "Reminders",
+      "description": "Protected APIs - Quản lý reminder nhắc hẹn"
     }
   ],
   "paths": {
@@ -394,6 +402,132 @@
           "403": {
             "description": "Bị chặn bởi middleware checkGroupMembership"
           }
+        }
+      }
+    },
+    "/payments/bank-setup": {
+      "put": {
+        "summary": "Lưu thông tin tài khoản ngân hàng của user",
+        "tags": ["Payments"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountNo": { "type": "string" },
+                  "accountName": { "type": "string" },
+                  "acqId": { "type": "string" }
+                },
+                "required": ["accountNo", "acqId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thông tin ngân hàng thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "accountNo": { "type": "string" },
+                        "accountName": { "type": "string" },
+                        "acqId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Thiếu dữ liệu hoặc tài khoản không hợp lệ" }
+        }
+      }
+    },
+    "/payments/qr": {
+      "post": {
+        "summary": "Tạo mã QR thanh toán",
+        "tags": ["Payments"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "number" },
+                  "addInfo": { "type": "string" }
+                },
+                "required": ["amount"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tạo mã QR thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "qrDataURL": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu thông tin hoặc chưa thiết lập tài khoản ngân hàng"
+          }
+        }
+      }
+    },
+    "/reminders/": {
+      "get": {
+        "summary": "Lấy danh sách reminder hiện tại của user",
+        "tags": ["Reminders"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Thành công" }
+        }
+      },
+      "post": {
+        "summary": "Tạo reminder mới",
+        "tags": ["Reminders"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conversationId": { "type": "string" },
+                  "partnerId": { "type": "string" },
+                  "content": { "type": "string" },
+                  "dueDate": { "type": "string", "format": "date-time" },
+                  "messageId": { "type": "string" },
+                  "creatorId": { "type": "string" }
+                },
+                "required": ["messageId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reminder được tạo thành công" },
+          "200": { "description": "Reminder đã tồn tại với cùng messageId" }
         }
       }
     }
