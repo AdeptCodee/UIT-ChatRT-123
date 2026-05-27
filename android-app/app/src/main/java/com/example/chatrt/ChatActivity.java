@@ -306,31 +306,39 @@ public class ChatActivity extends AppCompatActivity {
         EditText etFundAmount = dialogView.findViewById(R.id.etFundAmount);
         EditText etFundDays = dialogView.findViewById(R.id.etFundDays);
 
-        builder.setPositiveButton("Tạo quỹ", (dialog, which) -> {
-            String title = etFundTitle.getText().toString().trim();
-            String amountText = etFundAmount.getText().toString().trim();
-            String daysText = etFundDays.getText().toString().trim();
+        builder.setPositiveButton("Tạo quỹ", null);
+        builder.setNegativeButton("Hủy", (dialogInterface, which) -> dialogInterface.dismiss());
 
-            if (title.isEmpty() || amountText.isEmpty() || daysText.isEmpty()) {
-                Toast.makeText(ChatActivity.this, "Vui lòng nhập đầy đủ thông tin quỹ!", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        AlertDialog dialog = builder.create();
 
-            long totalAmount;
-            int totalDays;
-            try {
-                totalAmount = Long.parseLong(amountText);
-                totalDays = Integer.parseInt(daysText);
-            } catch (NumberFormatException e) {
-                Toast.makeText(ChatActivity.this, "Số tiền và số ngày phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        dialog.setOnShowListener(dlg -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String title = etFundTitle.getText().toString().trim();
+                String amountText = etFundAmount.getText().toString().trim();
+                String daysText = etFundDays.getText().toString().trim();
 
-            callCreateFundApi(title, totalAmount, totalDays);
+                if (title.isEmpty() || amountText.isEmpty() || daysText.isEmpty()) {
+                    Toast.makeText(ChatActivity.this, "Vui lòng nhập đầy đủ thông tin quỹ!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // KHAI BÁO VÀ PARSE DỮ LIỆU ĐỂ TRÁNH LỖI BÔI ĐỎ
+                long totalAmount;
+                int totalDays;
+                try {
+                    totalAmount = Long.parseLong(amountText);
+                    totalDays = Integer.parseInt(daysText);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(ChatActivity.this, "Số tiền và số ngày phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                callCreateFundApi(title, totalAmount, totalDays);
+                dialog.dismiss();
+            });
         });
 
-        builder.setNegativeButton("Hủy", null);
-        builder.show();
+        dialog.show();
     }
 
     private void callCreateFundApi(String title, long totalAmount, int totalDays) {
@@ -341,7 +349,14 @@ public class ChatActivity extends AppCompatActivity {
         body.put("totalAmount", totalAmount);
         body.put("totalDays", totalDays);
 
-        api.createFund(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+        String accessToken = new TokenManager(this).getAccessToken();
+        if (accessToken == null) {
+            Toast.makeText(this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String token = "Bearer " + accessToken;
+
+        api.createFund(token, body).enqueue(new Callback<com.google.gson.JsonObject>() {
             @Override
             public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
                 if (response.isSuccessful()) {
@@ -384,14 +399,22 @@ public class ChatActivity extends AppCompatActivity {
         ApiService api = ApiClient.getClient(this).create(ApiService.class);
         Map<String, Object> body = new HashMap<>();
         body.put("conversationId", conversationId);
-        api.skipDay(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+
+        String accessToken = new TokenManager(this).getAccessToken();
+        if (accessToken == null) {
+            Toast.makeText(this, "Phiên đăng nhập hết hạn!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String token = "Bearer " + accessToken;
+
+        api.skipDay(token, body).enqueue(new Callback<com.google.gson.JsonObject>() {
             @Override
             public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     String message = response.body().has("message") ? response.body().get("message").getAsString() : "Đã chuyển ngày thành công.";
                     Toast.makeText(ChatActivity.this, message, Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(ChatActivity.this, "Lỗi khi chạy /skipday", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChatActivity.this, "Lỗi khi chạy /skipday: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 

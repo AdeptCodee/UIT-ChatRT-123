@@ -104,6 +104,7 @@ public interface ApiService {
 
     @GET("reminders")
     Call<List<Reminder>> getMyReminders();
+
     @PUT("payments/bank-setup")
     Call<com.google.gson.JsonObject> setupBank(@Body java.util.Map<String, String> body);
 
@@ -111,8 +112,8 @@ public interface ApiService {
     Call<com.google.gson.JsonObject> generateQr(@Body java.util.Map<String, Object> body);
 
     @POST("funds/create")
-    Call<com.google.gson.JsonObject> createFund(@Body java.util.Map<String, Object> body);
+    Call<com.google.gson.JsonObject> createFund(@Header("Authorization") String token, @Body java.util.Map<String, Object> body);
 
     @POST("funds/skipday")
-    Call<com.google.gson.JsonObject> skipDay(@Body java.util.Map<String, Object> body);
+    Call<com.google.gson.JsonObject> skipDay(@Header("Authorization") String token, @Body java.util.Map<String, Object> body);
 }
