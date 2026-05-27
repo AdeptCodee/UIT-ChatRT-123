@@ -28,6 +28,8 @@ import com.bumptech.glide.Glide;
 import com.example.chatrt.api.*;
 import com.example.chatrt.models.*;
 import com.example.chatrt.utils.ReminderParser;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -306,40 +308,31 @@ public class ChatActivity extends AppCompatActivity {
         EditText etFundAmount = dialogView.findViewById(R.id.etFundAmount);
         EditText etFundDays = dialogView.findViewById(R.id.etFundDays);
 
-        // Thiết lập nút "Tạo quỹ" trước khi gọi builder.create()
         builder.setPositiveButton("Tạo quỹ", null);
         builder.setNegativeButton("Hủy", (dialogInterface, which) -> dialogInterface.dismiss());
 
         AlertDialog dialog = builder.create();
-
         dialog.setOnShowListener(dlg -> {
-            // Lấy nút từ dialog đã hiển thị để gán OnClickListener tùy chỉnh
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 String title = etFundTitle.getText().toString().trim();
                 String amountText = etFundAmount.getText().toString().trim();
                 String daysText = etFundDays.getText().toString().trim();
 
                 if (title.isEmpty() || amountText.isEmpty() || daysText.isEmpty()) {
-                    Toast.makeText(ChatActivity.this, "Vui lòng nhập đầy đủ thông tin quỹ!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChatActivity.this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // XỬ LÝ CHUYỂN ĐỔI DỮ LIỆU SỐ
-                long totalAmount;
-                int totalDays;
                 try {
-                    totalAmount = Long.parseLong(amountText);
-                    totalDays = Integer.parseInt(daysText);
+                    long totalAmount = Long.parseLong(amountText);
+                    int totalDays = Integer.parseInt(daysText);
+                    callCreateFundApi(title, totalAmount, totalDays);
+                    dialog.dismiss();
                 } catch (NumberFormatException e) {
-                    Toast.makeText(ChatActivity.this, "Số tiền và số ngày phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
-                    return;
+                    Toast.makeText(ChatActivity.this, "Số tiền/ngày phải là số!", Toast.LENGTH_SHORT).show();
                 }
-
-                callCreateFundApi(title, totalAmount, totalDays);
-                dialog.dismiss(); // Chỉ đóng dialog khi dữ liệu hợp lệ
             });
         });
-
         dialog.show();
     }
 
@@ -351,29 +344,34 @@ public class ChatActivity extends AppCompatActivity {
         body.put("totalAmount", totalAmount);
         body.put("totalDays", totalDays);
 
-        // Lấy token chuẩn từ TokenManager
         String accessToken = new TokenManager(this).getAccessToken();
         if (accessToken == null) {
-            Toast.makeText(this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Phiên đăng nhập hết hạn!", Toast.LENGTH_SHORT).show();
             return;
         }
         String token = "Bearer " + accessToken;
 
-        api.createFund(token, body).enqueue(new Callback<com.google.gson.JsonObject>() {
+        api.createFund(token, body).enqueue(new Callback<JsonObject>() {
             @Override
-            public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(ChatActivity.this, "🎉 Tạo quỹ thành công!", Toast.LENGTH_LONG).show();
-                    String fundMessage = "🪙 Quỹ mới được tạo: " + title + " - Tổng " + totalAmount + " VNĐ trong " + totalDays + " ngày.";
-                    sendSystemMessage(fundMessage);
+                    sendSystemMessage("🪙 Quỹ mới: " + title + " - Tổng " + totalAmount + " VNĐ trong " + totalDays + " ngày.");
                 } else {
-                    Toast.makeText(ChatActivity.this, "Lỗi tạo quỹ: " + response.code(), Toast.LENGTH_SHORT).show();
+                    String errorMsg = "Lỗi " + response.code();
+                    try {
+                        if (response.errorBody() != null) {
+                            JsonObject errorObj = new Gson().fromJson(response.errorBody().string(), JsonObject.class);
+                            if (errorObj.has("message")) errorMsg = errorObj.get("message").getAsString();
+                        }
+                    } catch (Exception e) { e.printStackTrace(); }
+                    Toast.makeText(ChatActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
-                Toast.makeText(ChatActivity.this, "Lỗi kết nối khi tạo quỹ", Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(ChatActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -404,27 +402,20 @@ public class ChatActivity extends AppCompatActivity {
         body.put("conversationId", conversationId);
 
         String accessToken = new TokenManager(this).getAccessToken();
-        if (accessToken == null) {
-            Toast.makeText(this, "Phiên đăng nhập hết hạn!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (accessToken == null) return;
         String token = "Bearer " + accessToken;
 
-        api.skipDay(token, body).enqueue(new Callback<com.google.gson.JsonObject>() {
+        api.skipDay(token, body).enqueue(new Callback<JsonObject>() {
             @Override
-            public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    String message = response.body().has("message") ? response.body().get("message").getAsString() : "Đã chuyển ngày thành công.";
+                    String message = response.body().has("message") ? response.body().get("message").getAsString() : "Đã chuyển ngày.";
                     Toast.makeText(ChatActivity.this, message, Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(ChatActivity.this, "Lỗi khi chạy /skipday: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChatActivity.this, "Lỗi skipDay: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
-
-            @Override
-            public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
-                Toast.makeText(ChatActivity.this, "Lỗi kết nối khi chạy /skipday", Toast.LENGTH_SHORT).show();
-            }
+            @Override public void onFailure(Call<JsonObject> call, Throwable t) {}
         });
     }
 
@@ -546,7 +537,6 @@ public class ChatActivity extends AppCompatActivity {
         EditText etBankAccNo = dialog.findViewById(R.id.etBankAccNo);
         EditText etBankAccName = dialog.findViewById(R.id.etBankAccName);
 
-        // --- FETCH DỮ LIỆU CŨ ĐỂ HIỂN THỊ ---
         ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
         apiService.fetchMe().enqueue(new Callback<SearchResponse>() {
             @Override
@@ -558,10 +548,7 @@ public class ChatActivity extends AppCompatActivity {
                         if (etBankAccName != null) etBankAccName.setText(user.getAccountName());
                         if (spinnerBank != null && user.getAcqId() != null) {
                             for (int i = 0; i < bankCodes.length; i++) {
-                                if (bankCodes[i].equals(user.getAcqId())) {
-                                    spinnerBank.setSelection(i);
-                                    break;
-                                }
+                                if (bankCodes[i].equals(user.getAcqId())) { spinnerBank.setSelection(i); break; }
                             }
                         }
                     }
@@ -605,7 +592,7 @@ public class ChatActivity extends AppCompatActivity {
                 String selectedBankCode = bankCodes[spinnerBank.getSelectedItemPosition()];
 
                 if (accNo.isEmpty() || accName.isEmpty()) {
-                    Toast.makeText(this, "Nhập đủ thông tin ngân hàng!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Nhập đủ thông tin!", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 Map<String, String> body = new HashMap<>();
@@ -613,42 +600,17 @@ public class ChatActivity extends AppCompatActivity {
                 body.put("accountName", accName);
                 body.put("acqId", selectedBankCode);
 
-                apiService.setupBank(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+                apiService.setupBank(body).enqueue(new Callback<JsonObject>() {
                     @Override
-                    public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         if (response.isSuccessful()) {
-                            Toast.makeText(ChatActivity.this, "Lưu tài khoản thành công!", Toast.LENGTH_SHORT).show();
-
-                            // Refresh my profile immediately so UI reflects saved bank info
-                            apiService.fetchMe().enqueue(new Callback<SearchResponse>() {
-                                @Override public void onResponse(Call<SearchResponse> call, Response<SearchResponse> resp) {
-                                    if (resp.isSuccessful() && resp.body() != null) {
-                                        User updated = resp.body().getUser();
-                                        if (updated != null) {
-                                            if (etBankAccNo != null) etBankAccNo.setText(updated.getAccountNo());
-                                            if (etBankAccName != null) etBankAccName.setText(updated.getAccountName());
-                                            if (spinnerBank != null && updated.getAcqId() != null) {
-                                                for (int i = 0; i < bankCodes.length; i++) {
-                                                    if (bankCodes[i].equals(updated.getAcqId())) { spinnerBank.setSelection(i); break; }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                @Override public void onFailure(Call<SearchResponse> call, Throwable t) {}
-                            });
-
+                            Toast.makeText(ChatActivity.this, "Lưu thành công!", Toast.LENGTH_SHORT).show();
                             if (btnTabCreate != null) btnTabCreate.performClick();
                         } else {
-                            try {
-                                String err = response.errorBody() != null ? response.errorBody().string() : "Lỗi không xác định";
-                                Toast.makeText(ChatActivity.this, "Lỗi " + response.code() + ": " + err, Toast.LENGTH_LONG).show();
-                            } catch (Exception e) { e.printStackTrace(); }
+                            Toast.makeText(ChatActivity.this, "Lỗi: " + response.code(), Toast.LENGTH_SHORT).show();
                         }
                     }
-                    @Override public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
-                        Toast.makeText(ChatActivity.this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
-                    }
+                    @Override public void onFailure(Call<JsonObject> call, Throwable t) {}
                 });
             });
         }
@@ -663,7 +625,7 @@ public class ChatActivity extends AppCompatActivity {
                 String amount = etQrAmount.getText().toString().trim();
                 String content = etQrContent.getText().toString().trim();
                 if (amount.isEmpty()) {
-                    Toast.makeText(this, "Vui lòng nhập số tiền!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Nhập số tiền!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -674,9 +636,9 @@ public class ChatActivity extends AppCompatActivity {
                 body.put("amount", Integer.parseInt(amount));
                 body.put("addInfo", content.isEmpty() ? "Chuyen tien" : content);
 
-                apiService.generateQr(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+                apiService.generateQr(body).enqueue(new Callback<JsonObject>() {
                     @Override
-                    public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             try {
                                 String base64String = response.body().get("qrDataURL").getAsString();
@@ -710,16 +672,12 @@ public class ChatActivity extends AppCompatActivity {
                             btnSendQr.setText("Gửi mã QR");
                             btnSendQr.setEnabled(true);
                             if (response.code() == 400) {
-                                Toast.makeText(ChatActivity.this, "Vui lòng cài đặt ngân hàng trước!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ChatActivity.this, "Vui lòng cài đặt ngân hàng!", Toast.LENGTH_SHORT).show();
                                 if (btnTabSetup != null) btnTabSetup.performClick();
-                            } else {
-                                try {
-                                    Toast.makeText(ChatActivity.this, "Lỗi: " + response.errorBody().string(), Toast.LENGTH_LONG).show();
-                                } catch (Exception e) { e.printStackTrace(); }
                             }
                         }
                     }
-                    @Override public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
+                    @Override public void onFailure(Call<JsonObject> call, Throwable t) {
                         btnSendQr.setText("Gửi mã QR");
                         btnSendQr.setEnabled(true);
                     }

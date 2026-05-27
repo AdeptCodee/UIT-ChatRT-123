@@ -7,6 +7,7 @@ import friendRoute from "./routes/friendRoutes.js";
 import messageRoute from "./routes/messageRoutes.js";
 import conversationRoute from "./routes/conversationRoutes.js";
 import paymentRoute from "./routes/paymentRoutes.js";
+import fundRoute from "./routes/fundRoutes.js"; // Import fundRoute
 import cookieParser from "cookie-parser";
 import { protectedRoute } from "./middlewares/authMiddleware.js";
 import cors from "cors";
@@ -19,7 +20,6 @@ import reminderRoutes from "./routes/reminderRoutes.js";
 
 dotenv.config();
 
-// const app = express();
 const PORT = process.env.PORT || 5001;
 
 // middlewares
@@ -54,6 +54,7 @@ app.use("/api/friends", friendRoute);
 app.use("/api/messages", messageRoute);
 app.use("/api/conversations", conversationRoute);
 app.use("/api/payments", paymentRoute);
+app.use("/api/funds", fundRoute); // Đăng ký fundRoute tại đây
 
 connectDB().then(() => {
   server.listen(PORT, () => {
