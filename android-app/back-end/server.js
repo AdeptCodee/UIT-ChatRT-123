@@ -7,7 +7,6 @@ import friendRoute from "./routes/friendRoutes.js";
 import messageRoute from "./routes/messageRoutes.js";
 import conversationRoute from "./routes/conversationRoutes.js";
 import paymentRoute from "./routes/paymentRoutes.js";
-import fundRoute from "./routes/fundRoutes.js";
 import cookieParser from "cookie-parser";
 import { protectedRoute } from "./middlewares/authMiddleware.js";
 import cors from "cors";
@@ -55,7 +54,6 @@ app.use("/api/friends", friendRoute);
 app.use("/api/messages", messageRoute);
 app.use("/api/conversations", conversationRoute);
 app.use("/api/payments", paymentRoute);
-app.use("/api/funds", fundRoute);
 
 connectDB().then(() => {
   server.listen(PORT, () => {

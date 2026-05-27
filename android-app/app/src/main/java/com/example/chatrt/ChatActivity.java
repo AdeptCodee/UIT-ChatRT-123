@@ -306,12 +306,14 @@ public class ChatActivity extends AppCompatActivity {
         EditText etFundAmount = dialogView.findViewById(R.id.etFundAmount);
         EditText etFundDays = dialogView.findViewById(R.id.etFundDays);
 
+        // Thiết lập nút "Tạo quỹ" trước khi gọi builder.create()
         builder.setPositiveButton("Tạo quỹ", null);
         builder.setNegativeButton("Hủy", (dialogInterface, which) -> dialogInterface.dismiss());
 
         AlertDialog dialog = builder.create();
 
         dialog.setOnShowListener(dlg -> {
+            // Lấy nút từ dialog đã hiển thị để gán OnClickListener tùy chỉnh
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 String title = etFundTitle.getText().toString().trim();
                 String amountText = etFundAmount.getText().toString().trim();
@@ -322,7 +324,7 @@ public class ChatActivity extends AppCompatActivity {
                     return;
                 }
 
-                // KHAI BÁO VÀ CHUYỂN ĐỔI DỮ LIỆU SỐ Ở ĐÂY ĐỂ FIX LỖI BÔI ĐỎ
+                // XỬ LÝ CHUYỂN ĐỔI DỮ LIỆU SỐ
                 long totalAmount;
                 int totalDays;
                 try {
@@ -334,7 +336,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 callCreateFundApi(title, totalAmount, totalDays);
-                dialog.dismiss(); 
+                dialog.dismiss(); // Chỉ đóng dialog khi dữ liệu hợp lệ
             });
         });
 
@@ -349,7 +351,7 @@ public class ChatActivity extends AppCompatActivity {
         body.put("totalAmount", totalAmount);
         body.put("totalDays", totalDays);
 
-        // FIX: Sử dụng getAccessToken() thay vì getToken()
+        // Lấy token chuẩn từ TokenManager
         String accessToken = new TokenManager(this).getAccessToken();
         if (accessToken == null) {
             Toast.makeText(this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
@@ -401,7 +403,6 @@ public class ChatActivity extends AppCompatActivity {
         Map<String, Object> body = new HashMap<>();
         body.put("conversationId", conversationId);
 
-        // FIX: Sử dụng getAccessToken() thay vì getToken()
         String accessToken = new TokenManager(this).getAccessToken();
         if (accessToken == null) {
             Toast.makeText(this, "Phiên đăng nhập hết hạn!", Toast.LENGTH_SHORT).show();
