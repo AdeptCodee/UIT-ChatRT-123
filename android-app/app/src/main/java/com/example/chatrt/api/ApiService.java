@@ -109,4 +109,10 @@ public interface ApiService {
 
     @POST("payments/qr")
     Call<com.google.gson.JsonObject> generateQr(@Body java.util.Map<String, Object> body);
+
+    @POST("funds/create")
+    Call<com.google.gson.JsonObject> createFund(@Body java.util.Map<String, Object> body);
+
+    @POST("funds/skipday")
+    Call<com.google.gson.JsonObject> skipDay(@Body java.util.Map<String, Object> body);
 }

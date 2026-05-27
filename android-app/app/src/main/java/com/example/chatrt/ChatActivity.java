@@ -1,14 +1,19 @@
 package com.example.chatrt;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,6 +52,11 @@ public class ChatActivity extends AppCompatActivity {
     private EditText etInput;
     private SocketManager socketManager;
     private Uri selectedImageUri = null;
+    private LinearLayout expansionPanel;
+    private ImageButton btnToggleFeatures;
+    private View btnFeatureFund;
+    private View btnFeatureQr;
+    private View btnFeatureImage;
 
     private SocketManager.OnOnlineUsersChangedListener onlineListener;
     private SocketManager.MessageListener messageListener;
@@ -82,8 +92,12 @@ public class ChatActivity extends AppCompatActivity {
         rvMessages = findViewById(R.id.rvMessages);
         etInput = findViewById(R.id.etMessageInput);
         ImageView btnSend = findViewById(R.id.btnSendMessage);
-        ImageView btnGallery = findViewById(R.id.btnSelectImage);
         TextView tvTitle = findViewById(R.id.tvChatTitle);
+        expansionPanel = findViewById(R.id.expansion_panel);
+        btnToggleFeatures = findViewById(R.id.btn_toggle_features);
+        btnFeatureFund = findViewById(R.id.btn_feature_fund);
+        btnFeatureQr = findViewById(R.id.btn_feature_qr);
+        btnFeatureImage = findViewById(R.id.btn_feature_image);
 
         tvTitle.setText(chatName);
         updateHeaderAvatar(chatName, avatarUrl);
@@ -93,12 +107,45 @@ public class ChatActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        ImageView btnQrCode = findViewById(R.id.btnQrCode);
-        if (btnQrCode != null) {
-            btnQrCode.setOnClickListener(v -> showQrDialog());
+        btnToggleFeatures.setOnClickListener(v -> {
+            if (expansionPanel.getVisibility() == View.GONE) {
+                expansionPanel.setVisibility(View.VISIBLE);
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                }
+            } else {
+                expansionPanel.setVisibility(View.GONE);
+            }
+        });
+
+        etInput.setOnClickListener(v -> {
+            if (expansionPanel.getVisibility() == View.VISIBLE) {
+                expansionPanel.setVisibility(View.GONE);
+            }
+        });
+
+        if (btnFeatureImage != null) {
+            btnFeatureImage.setOnClickListener(v -> {
+                expansionPanel.setVisibility(View.GONE);
+                selectImage();
+            });
         }
 
-        btnGallery.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
+        if (btnFeatureQr != null) {
+            btnFeatureQr.setOnClickListener(v -> {
+                expansionPanel.setVisibility(View.GONE);
+                showQrDialog();
+            });
+        }
+
+        if (btnFeatureFund != null) {
+            btnFeatureFund.setOnClickListener(v -> {
+                expansionPanel.setVisibility(View.GONE);
+                showCreateFundDialog();
+            });
+        }
+
         btnSend.setOnClickListener(v -> sendMessage());
     }
 
@@ -179,7 +226,20 @@ public class ChatActivity extends AppCompatActivity {
     private void sendMessage() {
         String content = etInput.getText().toString().trim();
         if (content.isEmpty() && selectedImageUri == null) return;
+
+        if ("/skipday".equals(content.trim())) {
+            etInput.setText("");
+            callSkipDayApi();
+            return;
+        }
+
         etInput.setText("");
+
+        MultipartBody.Part imagePart = null;
+        if (selectedImageUri != null) {
+            imagePart = createImagePart(selectedImageUri);
+            selectedImageUri = null;
+        }
 
         RequestBody rbConvoId = RequestBody.create(MediaType.parse("text/plain"), conversationId);
         RequestBody rbContent = RequestBody.create(MediaType.parse("text/plain"), content);
@@ -189,12 +249,15 @@ public class ChatActivity extends AppCompatActivity {
         if ("direct".equals(conversationType)) {
             String recipientId = "";
             for (Conversation.Participant p : currentParticipants) {
-                if (!p.getId().equals(myId)) { recipientId = p.getId(); break; }
+                if (!p.getId().equals(myId)) {
+                    recipientId = p.getId();
+                    break;
+                }
             }
             RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
-            api.sendDirectMessage(rbRecipient, rbContent, rbConvoId, null).enqueue(messageCallback);
+            api.sendDirectMessage(rbRecipient, rbContent, rbConvoId, imagePart).enqueue(messageCallback);
         } else {
-            api.sendGroupMessage(rbConvoId, rbContent, null).enqueue(messageCallback);
+            api.sendGroupMessage(rbConvoId, rbContent, imagePart).enqueue(messageCallback);
         }
     }
 
@@ -207,6 +270,137 @@ public class ChatActivity extends AppCompatActivity {
         }
         @Override public void onFailure(Call<SendMessageResponse> call, Throwable t) {}
     };
+
+    private void selectImage() {
+        pickImageLauncher.launch("image/*");
+    }
+
+    private MultipartBody.Part createImagePart(Uri uri) {
+        try (java.io.InputStream inputStream = getContentResolver().openInputStream(uri);
+             java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream()) {
+            if (inputStream == null) return null;
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            String mimeType = getContentResolver().getType(uri);
+            if (mimeType == null) {
+                mimeType = "image/*";
+            }
+            RequestBody requestFile = RequestBody.create(outputStream.toByteArray(), MediaType.parse(mimeType));
+            return MultipartBody.Part.createFormData("image", "upload_image.png", requestFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void showCreateFundDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_create_fund, null);
+        builder.setView(dialogView);
+        builder.setTitle("Tạo quỹ mới");
+
+        EditText etFundTitle = dialogView.findViewById(R.id.etFundTitle);
+        EditText etFundAmount = dialogView.findViewById(R.id.etFundAmount);
+        EditText etFundDays = dialogView.findViewById(R.id.etFundDays);
+
+        builder.setPositiveButton("Tạo quỹ", (dialog, which) -> {
+            String title = etFundTitle.getText().toString().trim();
+            String amountText = etFundAmount.getText().toString().trim();
+            String daysText = etFundDays.getText().toString().trim();
+
+            if (title.isEmpty() || amountText.isEmpty() || daysText.isEmpty()) {
+                Toast.makeText(ChatActivity.this, "Vui lòng nhập đầy đủ thông tin quỹ!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            long totalAmount;
+            int totalDays;
+            try {
+                totalAmount = Long.parseLong(amountText);
+                totalDays = Integer.parseInt(daysText);
+            } catch (NumberFormatException e) {
+                Toast.makeText(ChatActivity.this, "Số tiền và số ngày phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            callCreateFundApi(title, totalAmount, totalDays);
+        });
+
+        builder.setNegativeButton("Hủy", null);
+        builder.show();
+    }
+
+    private void callCreateFundApi(String title, long totalAmount, int totalDays) {
+        ApiService api = ApiClient.getClient(this).create(ApiService.class);
+        Map<String, Object> body = new HashMap<>();
+        body.put("conversationId", conversationId);
+        body.put("title", title);
+        body.put("totalAmount", totalAmount);
+        body.put("totalDays", totalDays);
+
+        api.createFund(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+            @Override
+            public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(ChatActivity.this, "🎉 Tạo quỹ thành công!", Toast.LENGTH_LONG).show();
+                    String fundMessage = "🪙 Quỹ mới được tạo: " + title + " - Tổng " + totalAmount + " VNĐ trong " + totalDays + " ngày.";
+                    sendSystemMessage(fundMessage);
+                } else {
+                    Toast.makeText(ChatActivity.this, "Lỗi tạo quỹ: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
+                Toast.makeText(ChatActivity.this, "Lỗi kết nối khi tạo quỹ", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void sendSystemMessage(String content) {
+        RequestBody rbConvoId = RequestBody.create(MediaType.parse("text/plain"), conversationId);
+        RequestBody rbContent = RequestBody.create(MediaType.parse("text/plain"), content);
+        ApiService api = ApiClient.getClient(this).create(ApiService.class);
+
+        if ("direct".equals(conversationType)) {
+            String recipientId = "";
+            for (Conversation.Participant p : currentParticipants) {
+                if (!p.getId().equals(myId)) {
+                    recipientId = p.getId();
+                    break;
+                }
+            }
+            RequestBody rbRecipient = RequestBody.create(MediaType.parse("text/plain"), recipientId);
+            api.sendDirectMessage(rbRecipient, rbContent, rbConvoId, null).enqueue(messageCallback);
+        } else {
+            api.sendGroupMessage(rbConvoId, rbContent, null).enqueue(messageCallback);
+        }
+    }
+
+    private void callSkipDayApi() {
+        ApiService api = ApiClient.getClient(this).create(ApiService.class);
+        Map<String, Object> body = new HashMap<>();
+        body.put("conversationId", conversationId);
+        api.skipDay(body).enqueue(new Callback<com.google.gson.JsonObject>() {
+            @Override
+            public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String message = response.body().has("message") ? response.body().get("message").getAsString() : "Đã chuyển ngày thành công.";
+                    Toast.makeText(ChatActivity.this, message, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(ChatActivity.this, "Lỗi khi chạy /skipday", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
+                Toast.makeText(ChatActivity.this, "Lỗi kết nối khi chạy /skipday", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     private void setupSocket() {
         socketManager.connect();

@@ -93,6 +93,101 @@
         android:padding="10dp" />
 
     <LinearLayout
+        android:id="@+id/expansion_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/inputArea"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#F3F4F6"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/btn_feature_fund"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_white_rounded"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_piggy_bank"
+                app:tint="#10B981" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tạo quỹ"
+                android:textColor="#111827"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_feature_qr"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_white_rounded"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/baseline_qr_code_scanner_24"
+                app:tint="#0D6EFD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Quét QR"
+                android:textColor="#111827"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_feature_image"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_white_rounded"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_gallery"
+                app:tint="#8B5CF6" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gửi ảnh"
+                android:textColor="#111827"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/inputArea"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -102,21 +197,13 @@
         android:orientation="horizontal"
         android:padding="10dp">
 
-        <ImageView
-            android:id="@+id/btnSelectImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            app:tint="@color/primary_purple" />
-
-        <ImageView
-            android:id="@+id/btnQrCode"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
-            android:src="@drawable/baseline_qr_code_scanner_24"
-            app:tint="#0D6EFD" />
+        <ImageButton
+            android:id="@+id/btn_toggle_features"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_piggy_bank"
+            android:contentDescription="Mở rộng tính năng" />
 
         <EditText
             android:id="@+id/etMessageInput"
@@ -126,7 +213,8 @@
             android:background="@drawable/edit_text_bg"
             android:hint="Nhập tin nhắn..."
             android:padding="12dp"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:layout_marginStart="8dp" />
 
         <ImageView
             android:id="@+id/btnSendMessage"

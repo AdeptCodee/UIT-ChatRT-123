@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tạo quỹ mới"
+        android:textColor="#111827"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/etFundTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tên quỹ"
+        android:inputType="text"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/edit_text_bg" />
+
+    <EditText
+        android:id="@+id/etFundAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tổng số tiền"
+        android:inputType="number"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/edit_text_bg" />
+
+    <EditText
+        android:id="@+id/etFundDays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Số ngày"
+        android:inputType="number"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/edit_text_bg" />
+</LinearLayout>
