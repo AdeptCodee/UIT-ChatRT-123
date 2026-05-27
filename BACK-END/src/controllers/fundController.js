@@ -103,4 +103,55 @@ export const skipDay = async (req, res) => {
     console.error("Lỗi nhảy ngày:", error);
     res.status(500).json({ message: "Lỗi Server khi nhảy ngày" });
   }
+
+  // 1. API: Tạo Quỹ Mới (Khởi động heo đất)
+  export const createFund = async (req, res) => {
+    try {
+      const { conversationId, title, totalAmount, totalDays } = req.body;
+
+      // SỬA LỖI 1: Lấy ID người tạo siêu an toàn (Cover mọi loại Middleware)
+      const creatorId = req.userId || req.user?.id || req.user?._id || req.user;
+
+      // Lấy danh sách nhóm
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation)
+        return res.status(404).json({ message: "Không tìm thấy nhóm chat" });
+
+      // SỬA LỖI 2: Quét mảng thành viên an toàn (Cover cả 'participants' và 'members')
+      const participantsList =
+        conversation.participants || conversation.members || [];
+      const memberIds = participantsList.map((p) => p.userId || p._id || p);
+
+      // Tính toán chi tiết 2 trường bị thiếu
+      const dailyAmount = Math.ceil(totalAmount / totalDays);
+      const dailyAmountPerPerson = Math.ceil(dailyAmount / memberIds.length);
+
+      // Lưu DB
+      const newFund = new Fund({
+        conversationId,
+        creatorId,
+        title,
+        totalAmount,
+        totalDays,
+        dailyAmount,
+        dailyAmountPerPerson,
+        memberIds,
+        currentDay: 1,
+        status: "active",
+      });
+
+      await newFund.save();
+
+      res.status(201).json({
+        message: "Tạo quỹ thành công!",
+        fund: newFund,
+      });
+    } catch (error) {
+      // RADAR BẮT BỆNH: In thẳng lỗi ra màn hình Terminal của VS Code
+      console.error("=== 🚨 LỖI CHI TIẾT TẠO QUỸ 🚨 ===");
+      console.error(error.message);
+
+      res.status(400).json({ message: "Lỗi tạo quỹ: " + error.message });
+    }
+  };
 };

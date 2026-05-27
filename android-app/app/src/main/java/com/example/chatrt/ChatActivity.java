@@ -322,7 +322,7 @@ public class ChatActivity extends AppCompatActivity {
                     return;
                 }
 
-                // KHAI BÁO VÀ PARSE DỮ LIỆU ĐỂ TRÁNH LỖI BÔI ĐỎ
+                // KHAI BÁO VÀ CHUYỂN ĐỔI DỮ LIỆU SỐ Ở ĐÂY ĐỂ FIX LỖI BÔI ĐỎ
                 long totalAmount;
                 int totalDays;
                 try {
@@ -334,7 +334,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 callCreateFundApi(title, totalAmount, totalDays);
-                dialog.dismiss();
+                dialog.dismiss(); 
             });
         });
 
@@ -349,6 +349,7 @@ public class ChatActivity extends AppCompatActivity {
         body.put("totalAmount", totalAmount);
         body.put("totalDays", totalDays);
 
+        // FIX: Sử dụng getAccessToken() thay vì getToken()
         String accessToken = new TokenManager(this).getAccessToken();
         if (accessToken == null) {
             Toast.makeText(this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
@@ -400,6 +401,7 @@ public class ChatActivity extends AppCompatActivity {
         Map<String, Object> body = new HashMap<>();
         body.put("conversationId", conversationId);
 
+        // FIX: Sử dụng getAccessToken() thay vì getToken()
         String accessToken = new TokenManager(this).getAccessToken();
         if (accessToken == null) {
             Toast.makeText(this, "Phiên đăng nhập hết hạn!", Toast.LENGTH_SHORT).show();
